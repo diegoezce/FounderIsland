@@ -481,6 +481,7 @@ function update(dt) {
 
   // unidades
   for (const u of G.units) updateUnit(u, dt);
+  separate(dt);
   G.units = G.units.filter(u=>u.hp>0);
   G.buildings = G.buildings.filter(b=>b.hp>0 || b===playerHQ || b===enemyHQ);
   G.selection = G.units.filter(u=>u.sel);
@@ -509,6 +510,24 @@ function update(dt) {
 
   maybeFireEvent();
   checkEnd();
+}
+
+// Separación suave entre personajes para que nunca se encimen
+function separate(dt) {
+  const all = G.units.concat(G.customers);
+  const MIN = 17, f = Math.min(1, dt*7);
+  for (let i=0;i<all.length;i++) for (let j=i+1;j<all.length;j++) {
+    const a = all[i], b = all[j];
+    let dx = b.x-a.x, dy = b.y-a.y;
+    if (Math.abs(dx)>MIN || Math.abs(dy)>MIN) continue;
+    let d = Math.hypot(dx, dy);
+    if (d >= MIN) continue;
+    if (d < 0.01) { const ang = Math.random()*7; dx = Math.cos(ang); dy = Math.sin(ang); d = 1; }
+    const push = (MIN-d)/2*f, nx = dx/d, ny = dy/d;
+    a.x -= nx*push; a.y -= ny*push;
+    b.x += nx*push; b.y += ny*push;
+  }
+  for (const e of all) { e.x = Math.max(14, Math.min(W-14, e.x)); e.y = Math.max(30, Math.min(H-14, e.y)); }
 }
 
 function nearestEnemyOf(u, maxD) {
@@ -552,7 +571,8 @@ function updateUnit(u, dt) {
       if (!c || c.side || c.dead) { u.state="idle"; u.target=null; break; }
       if (dist(u,c)>34) { moveToward(u, c.x, c.y, dt, 30); u.convertT=0; }
       else {
-        u.convertT += dt * (1 + G.rep/200); // más reputación = pitch más rápido
+        // más reputación = pitch más rápido (solo aplica al jugador)
+        u.convertT += dt * (u.side==="player" ? 1 + G.rep/200 : 1);
         c.pitchBy = u.side;
         if (Math.random()<dt*3) G.fx.push({x:c.x, y:c.y-22, e:"💬", t:.5});
         if (u.convertT>=3) { c.side=u.side; u.state="idle"; u.target=null; }
@@ -583,13 +603,6 @@ function updateUnit(u, dt) {
     if (best) { u.state="convert"; u.target=best; u.convertT=0; }
     else if (G.enemyAggro>1) { u.state="attack"; u.target=playerHQ; }
     else moveToward(u, enemyHQ.x-60, enemyHQ.y+60, dt, 10);
-  }
-  if (u.side==="enemy" && u.state==="convert") {
-    const c = u.target;
-    if (c && !c.side) {
-      if (dist(u,c)>34) moveToward(u, c.x, c.y, dt, 30);
-      else { u.convertT += dt; if (u.convertT>=3) { c.side="enemy"; u.state="idle"; u.target=null; } }
-    }
   }
 }
 
