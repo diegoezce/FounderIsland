@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Founder City — Capítulo 1: El Garaje</title>
+<title>Founder City — Chapter 1: The Garage</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -65,8 +65,8 @@
 <div id="hud">
   <div class="res">💰 <b id="cash">0</b></div>
   <div class="res" id="burn">🔥 -0/s</div>
-  <div class="res">🚀 Producto <span class="barOuter"><span class="barInner" id="prodBar"></span></span> <b id="prodTxt">0%</b></div>
-  <div class="res">🧑‍🤝‍🧑 Clientes <b id="clients">0</b>/6</div>
+  <div class="res">🚀 Product <span class="barOuter"><span class="barInner" id="prodBar"></span></span> <b id="prodTxt">0%</b></div>
+  <div class="res">🧑‍🤝‍🧑 Customers <b id="clients">0</b>/6</div>
   <div class="res">⭐ Rep <b id="rep">50</b></div>
   <div id="enemybar">MacroCorp <span class="barOuter"><span class="barInner" id="ebarInner"></span></span></div>
 </div>
@@ -76,16 +76,16 @@
 
   <div class="overlay" id="intro">
     <h1>🏙️ FOUNDER CITY</h1>
-    <h2>Capítulo 1: El Garaje</h2>
-    <p>Año 1998. Renunciaste a tu trabajo corporativo para fundar <b>Nimbus</b>, una startup de software,
-    desde un garaje en pleno centro. En la otra punta de la ciudad, la todopoderosa <b style="color:#ff6b6b">MacroCorp</b>
-    quiere el mismo mercado… y no juega limpio.</p>
-    <p>Recluta <b>Devs</b> para programar el producto y <b>Sales</b> para conquistar clientes.
-    Cuidado con el <b style="color:#ff8866">burn rate</b>: cada empleado cobra sueldo cada segundo.</p>
-    <p><b>Victoria:</b> producto al 100% y 6 clientes (¡IPO!) o destruye la torre de MacroCorp.<br>
-    <b>Derrota:</b> te quedas sin caja, MacroCorp domina el mercado, o arrasan tu garaje.</p>
-    <p class="quote">"¿Es este el mejor negocio de todos los tiempos?" — Acquired</p>
-    <button onclick="startGame()">▶ FUNDAR LA EMPRESA</button>
+    <h2>Chapter 1: The Garage</h2>
+    <p>It's 1998. You quit your corporate job to found <b>Nimbus</b>, a software startup,
+    from a downtown garage. Across the city, the almighty <b style="color:#ff6b6b">MacroCorp</b>
+    wants the same market… and doesn't play fair.</p>
+    <p>Recruit <b>Devs</b> to build the product and <b>Sales</b> to win customers.
+    Watch your <b style="color:#ff8866">burn rate</b>: every employee draws a salary every second.</p>
+    <p><b>Victory:</b> product at 100% and 6 customers (IPO!) or destroy MacroCorp's tower.<br>
+    <b>Defeat:</b> you run out of cash, MacroCorp corners the market, or they raze your garage.</p>
+    <p class="quote">"Is this the greatest business of all time?" — Acquired</p>
+    <button onclick="startGame()">▶ FOUND THE COMPANY</button>
   </div>
 
   <div class="overlay" id="eventModal">
@@ -101,18 +101,18 @@
     <h1 id="endTitle"></h1>
     <p id="endText"></p>
     <p class="quote" id="endQuote"></p>
-    <button onclick="location.reload()">↻ REINTENTAR</button>
+    <button onclick="location.reload()">↻ TRY AGAIN</button>
   </div>
 </div>
 
 <div id="panel">
-  <button class="cmd" id="bDev">👩‍💻 Reclutar Dev<br><small>$60 · sueldo $0.5/s</small></button>
-  <button class="cmd" id="bSales">🤵 Reclutar Sales<br><small>$90 · sueldo $0.5/s</small></button>
-  <button class="cmd" id="bServer">🖥️ Construir Server<br><small>$120 · +dev speed</small></button>
-  <button class="cmd" id="bCafe">☕ Construir Cafetería<br><small>$100 · regenera moral</small></button>
-  <div id="msg">Selecciona unidades con clic o arrastrando. Clic derecho: mover / atacar / convertir clientes / programar (dev → garaje).</div>
+  <button class="cmd" id="bDev">👩‍💻 Hire Dev<br><small>$60 · salary $0.5/s</small></button>
+  <button class="cmd" id="bSales">🤵 Hire Sales<br><small>$90 · salary $0.5/s</small></button>
+  <button class="cmd" id="bServer">🖥️ Build Server<br><small>$120 · +dev speed</small></button>
+  <button class="cmd" id="bCafe">☕ Build Coffee Shop<br><small>$100 · restores morale</small></button>
+  <div id="msg">Select units by clicking or dragging. Right-click: move / attack / convert customers / code (dev → garage).</div>
 </div>
-<div id="help">Devs: clic derecho sobre tu garaje = programar producto · sobre obra = construir. Sales: clic derecho sobre cliente 🧍 = pitch de venta. Los pitches contra sales de MacroCorp se pelean solos a corta distancia.</div>
+<div id="help">Devs: right-click your garage = write code · right-click a construction site = build. Sales: right-click a customer 🧍 = sales pitch. Pitch battles against MacroCorp sales happen automatically at close range.</div>
 
 <script>
 "use strict";
@@ -135,10 +135,10 @@ const SALARY = 0.5, CLIENT_REV = 3;
 // ---------- Edificios ----------
 function mkBuilding(type, x, y, side, done=true) {
   const defs = {
-    hq:     { w:80, h:64, hp:500, emoji:"🏠", name:"Garaje Nimbus" },
-    ehq:    { w:84, h:84, hp:450, emoji:"🏢", name:"Torre MacroCorp" },
+    hq:     { w:80, h:64, hp:500, emoji:"🏠", name:"Nimbus Garage" },
+    ehq:    { w:84, h:84, hp:450, emoji:"🏢", name:"MacroCorp Tower" },
     server: { w:44, h:44, hp:120, emoji:"🖥️", name:"Server" },
-    cafe:   { w:48, h:44, hp:120, emoji:"☕", name:"Cafetería" },
+    cafe:   { w:48, h:44, hp:120, emoji:"☕", name:"Coffee Shop" },
   };
   const d = defs[type];
   return { kind:"building", type, x, y, w:d.w, h:d.h, hp:d.hp, maxHp:d.hp,
@@ -314,18 +314,18 @@ for (let i=0;i<4;i++) G.customers.push(mkCustomer());
 
 // ---------- Eventos de junta (sabor Acquired) ----------
 const EVENTS = [
-  { at:50, title:"📞 Llama un VC de Sand Hill Road",
-    text:"Un socio de Kleiner Sequoia Ventures escuchó de Nimbus. Ofrece <b>$450</b> a cambio de un asiento en tu junta (y presión por crecer rápido: tu burn subirá con las expectativas).",
-    a:{ label:"A) Aceptar la inversión (+$450, -10 Rep con los puristas del bootstrap)", fn:()=>{ G.cash+=450; G.rep-=10; toast("Term sheet firmado. La caja respira."); } },
-    b:{ label:"B) Seguir bootstrapped (+15 Rep, los clientes confían en ti)", fn:()=>{ G.rep+=15; toast("Bootstrap orgulloso. La prensa te adora."); } } },
-  { at:130, title:"📰 TechCrunch quiere tu historia",
-    text:"Un periodista prepara una nota sobre 'la startup del garaje que desafía a MacroCorp'. Una campaña de PR costaría <b>$120</b> pero atraería una ola de clientes curiosos al mapa.",
-    a:{ label:"A) Pagar la campaña de PR (-$120, llegan 4 clientes nuevos)", fn:()=>{ if(G.cash>=120){G.cash-=120; for(let i=0;i<4;i++){const c=mkCustomer(); c.x=playerHQ.x+80+Math.random()*120; c.y=playerHQ.y-60-Math.random()*120; G.customers.push(c);} toast("¡La nota es viral! Llegan clientes.");} else toast("No te alcanza la caja…"); } },
-    b:{ label:"B) 'El producto habla por sí solo' (+5 Rep)", fn:()=>{ G.rep+=5; toast("Humildad de founder. La nota sale igual, pero pequeña."); } } },
-  { at:210, title:"💼 MacroCorp quiere comprarte",
-    text:"El CEO de MacroCorp te invita a comer. Sobre la mesa: <b>adquisición inmediata</b>. Tu equipo pasaría a su nómina y Nimbus desaparecería. 'Es una oferta que no deberías rechazar', sonríe.",
-    a:{ label:"A) Vender la empresa (fin del capítulo: acqui-hire)", fn:()=>{ endGame("acquihire"); } },
-    b:{ label:"B) Rechazar la oferta (MacroCorp se pone agresiva…)", fn:()=>{ G.enemyAggro=1.8; G.rep+=10; toast("'Te vas a arrepentir', dice al pagar la cuenta."); } } },
+  { at:50, title:"📞 A Sand Hill Road VC calls",
+    text:"A partner at Kleiner Sequoia Ventures heard about Nimbus. He offers <b>$450</b> in exchange for a board seat (and pressure to grow fast: expectations will raise your burn).",
+    a:{ label:"A) Take the investment (+$450, -10 Rep with the bootstrap purists)", fn:()=>{ G.cash+=450; G.rep-=10; toast("Term sheet signed. The bank account breathes."); } },
+    b:{ label:"B) Stay bootstrapped (+15 Rep, customers trust you)", fn:()=>{ G.rep+=15; toast("Proudly bootstrapped. The press loves you."); } } },
+  { at:130, title:"📰 TechCrunch wants your story",
+    text:"A journalist is writing a piece on 'the garage startup taking on MacroCorp'. A PR campaign would cost <b>$120</b> but would draw a wave of curious customers onto the map.",
+    a:{ label:"A) Pay for the PR campaign (-$120, 4 new customers arrive)", fn:()=>{ if(G.cash>=120){G.cash-=120; for(let i=0;i<4;i++){const c=mkCustomer(); c.x=playerHQ.x+80+Math.random()*120; c.y=playerHQ.y-60-Math.random()*120; G.customers.push(c);} toast("The story goes viral! Customers arrive.");} else toast("You can't afford it…"); } },
+    b:{ label:"B) 'The product speaks for itself' (+5 Rep)", fn:()=>{ G.rep+=5; toast("Founder humility. The story runs anyway, but small."); } } },
+  { at:210, title:"💼 MacroCorp wants to buy you",
+    text:"MacroCorp's CEO invites you to lunch. On the table: <b>immediate acquisition</b>. Your team would join their payroll and Nimbus would disappear. 'It's an offer you shouldn't refuse,' he smiles.",
+    a:{ label:"A) Sell the company (end of chapter: acqui-hire)", fn:()=>{ endGame("acquihire"); } },
+    b:{ label:"B) Turn down the offer (MacroCorp gets aggressive…)", fn:()=>{ G.enemyAggro=1.8; G.rep+=10; toast("'You'll regret this,' he says as he picks up the check."); } } },
 ];
 
 // ---------- Utilidades ----------
@@ -348,7 +348,7 @@ cv.addEventListener("mousedown", e=>{
     if (G.placing) { placeBuilding(m.x, m.y); return; }
     G.drag = {x1:m.x, y1:m.y, x2:m.x, y2:m.y};
   } else if (e.button===2) {
-    if (G.placing) { G.placing=null; toast("Construcción cancelada."); return; }
+    if (G.placing) { G.placing=null; toast("Construction canceled."); return; }
     orderSelection(m.x, m.y);
   }
 });
@@ -374,35 +374,35 @@ function orderSelection(x, y) {
   // ¿objetivo enemigo?
   let tgt = G.units.find(u=>u.side==="enemy" && Math.hypot(u.x-x,u.y-y)<20)
          || G.buildings.find(b=>b.side==="enemy" && inBuilding(b,x,y));
-  if (tgt) { sel.forEach(u=>{ u.state="attack"; u.target=tgt; }); toast("¡A por MacroCorp!"); return; }
+  if (tgt) { sel.forEach(u=>{ u.state="attack"; u.target=tgt; }); toast("Go get MacroCorp!"); return; }
   // ¿cliente?
   const cust = G.customers.find(c=>!c.side && Math.hypot(c.x-x,c.y-y)<20);
   if (cust) {
     let any=false;
     sel.forEach(u=>{ if(u.type==="sales"){ u.state="convert"; u.target=cust; u.convertT=0; any=true; } else { u.state="move"; u.tx=x; u.ty=y; } });
-    if (any) toast("Sales en camino a hacer el pitch…");
+    if (any) toast("Sales heading over to make the pitch…");
     return;
   }
   // ¿garaje propio (devs a programar)?
   if (inBuilding(playerHQ, x, y)) {
     sel.forEach(u=>{ if(u.type==="dev"){ u.state="code"; u.target=playerHQ; } else { u.state="move"; u.tx=x; u.ty=y; } });
-    if (sel.some(u=>u.type==="dev")) toast("Devs a picar código. 🚀");
+    if (sel.some(u=>u.type==="dev")) toast("Devs shipping code. 🚀");
     return;
   }
   // ¿obra en construcción?
   const site = G.buildings.find(b=>b.side==="player" && b.progress<1 && inBuilding(b,x,y));
-  if (site) { sel.forEach(u=>{ if(u.type==="dev"){ u.state="build"; u.target=site; } }); toast("Devs a construir."); return; }
+  if (site) { sel.forEach(u=>{ if(u.type==="dev"){ u.state="build"; u.target=site; } }); toast("Devs on construction duty."); return; }
   // mover en formación simple
   sel.forEach((u,i)=>{ u.state="move"; u.tx=x+(i%3)*22-22; u.ty=y+Math.floor(i/3)*22; u.target=null; });
 }
 
 // ---------- Panel ----------
 function recruit(type, cost) {
-  if (G.cash < cost) { toast("Caja insuficiente. El burn no perdona."); return; }
+  if (G.cash < cost) { toast("Not enough cash. The burn is unforgiving."); return; }
   G.cash -= cost;
   const u = mkUnit(type, playerHQ.x+50+Math.random()*30, playerHQ.y-40+Math.random()*60, "player");
   G.units.push(u);
-  toast(type==="dev" ? "Dev contratado. Huele a café y a deploy." : "Sales contratado. Trae rolodex propio.");
+  toast(type==="dev" ? "Dev hired. Smells like coffee and deploys." : "Sales hired. Brings their own rolodex.");
 }
 document.getElementById("bDev").onclick   = ()=>recruit("dev",60);
 document.getElementById("bSales").onclick = ()=>recruit("sales",90);
@@ -410,9 +410,9 @@ document.getElementById("bServer").onclick = ()=>startPlacing("server",120);
 document.getElementById("bCafe").onclick   = ()=>startPlacing("cafe",100);
 
 function startPlacing(type, cost) {
-  if (G.cash < cost) { toast("Caja insuficiente."); return; }
+  if (G.cash < cost) { toast("Not enough cash."); return; }
   G.placing = {type, cost};
-  toast("Clic izquierdo para colocar, derecho para cancelar.");
+  toast("Left-click to place, right-click to cancel.");
 }
 function placeBuilding(x, y) {
   const p = G.placing;
@@ -423,7 +423,7 @@ function placeBuilding(x, y) {
   G.placing = null;
   // manda devs seleccionados a construir
   G.units.filter(u=>u.sel && u.type==="dev").forEach(u=>{ u.state="build"; u.target=b; });
-  toast("Obra iniciada. Manda un dev (clic derecho) si no hay nadie construyendo.");
+  toast("Construction started. Send a dev (right-click) if nobody's building.");
 }
 
 // ---------- Eventos ----------
@@ -467,7 +467,7 @@ function update(dt) {
       const hq = c.side==="player"?playerHQ:enemyHQ;
       const d = dist(c, hq);
       if (d<50) { c.dead=true;
-        if (c.side==="player"){ G.clients++; G.cash+=40; toast("¡Cliente firmado! +$40 y $3/s de ingreso."); }
+        if (c.side==="player"){ G.clients++; G.cash+=40; toast("Customer signed! +$40 and $3/s in revenue."); }
         else G.enemyClients++;
       } else { c.x += (hq.x-c.x)/d*45*dt; c.y += (hq.y-c.y)/d*45*dt; }
     } else {
@@ -533,7 +533,7 @@ function attackTarget(u, dt) {
     t.hp -= u.dps*dt;
     if (Math.random()<dt*6) G.fx.push({x:t.x+(Math.random()-.5)*20, y:t.y+(Math.random()-.5)*20, e:"💢", t:.4});
     if (t.hp<=0) { u.state="idle"; u.target=null;
-      if (t===enemyHQ) toast("¡La torre de MacroCorp se derrumba!");
+      if (t===enemyHQ) toast("MacroCorp's tower is coming down!");
     }
   }
 }
@@ -570,7 +570,7 @@ function updateUnit(u, dt) {
       if (!b || b.hp<=0) { u.state="idle"; break; }
       if (b.progress>=1) { u.state="idle"; u.target=null; break; }
       if (dist(u,b) > Math.max(b.w,b.h)/2+14) moveToward(u, b.x, b.y, dt);
-      else { b.progress = Math.min(1, b.progress + dt/6); if (b.progress>=1) toast(b.name+" terminado."); }
+      else { b.progress = Math.min(1, b.progress + dt/6); if (b.progress>=1) toast(b.name+" finished."); }
       break;
     }
   }
@@ -598,25 +598,25 @@ function endGame(kind) {
   G.running = false;
   const T = document.getElementById("endTitle"), X = document.getElementById("endText"), Q = document.getElementById("endQuote");
   const S = document.getElementById("endScreen");
-  const stats = `Duración: ${Math.floor(G.t)}s · Caja final: $${Math.floor(G.cash)} · Producto: ${Math.floor(G.product)}% · Clientes: ${G.clients} · Rep: ${G.rep}`;
-  if (kind==="ipo") { T.textContent="🔔 ¡IPO! NIMBUS SALE A BOLSA"; T.style.color="#7ec850";
-    X.innerHTML="Producto terminado, clientes fieles, y el garaje se queda pequeño. Suena la campana del NASDAQ. MacroCorp emite un comunicado 'dándote la bienvenida a la competencia'.<br><br>"+stats;
-    Q.textContent="\"Y ese, amigos, fue solo el capítulo uno.\" — Acquired"; }
-  else if (kind==="conquest") { T.textContent="🏆 MACROCORP HA CAÍDO"; T.style.color="#7ec850";
-    X.innerHTML="Contra todo pronóstico, tu ejército de sales desmanteló su torre pitch a pitch. El mercado es tuyo.<br><br>"+stats;
-    Q.textContent="\"A veces la mejor defensa es un buen roadmap… y mejor equipo comercial.\""; }
+  const stats = `Run time: ${Math.floor(G.t)}s · Final cash: $${Math.floor(G.cash)} · Product: ${Math.floor(G.product)}% · Customers: ${G.clients} · Rep: ${G.rep}`;
+  if (kind==="ipo") { T.textContent="🔔 IPO! NIMBUS GOES PUBLIC"; T.style.color="#7ec850";
+    X.innerHTML="Product shipped, loyal customers, and the garage is bursting at the seams. The NASDAQ bell rings. MacroCorp issues a press release 'welcoming you to the competition'.<br><br>"+stats;
+    Q.textContent="\"And that, folks, was only chapter one.\" — Acquired"; }
+  else if (kind==="conquest") { T.textContent="🏆 MACROCORP HAS FALLEN"; T.style.color="#7ec850";
+    X.innerHTML="Against all odds, your army of sales reps dismantled their tower pitch by pitch. The market is yours.<br><br>"+stats;
+    Q.textContent="\"Sometimes the best defense is a good roadmap… and a better sales team.\""; }
   else if (kind==="acquihire") { T.textContent="🤝 ACQUI-HIRE"; T.style.color="#ffd766";
-    X.innerHTML="Vendiste Nimbus a MacroCorp. Tu equipo tiene ahora gafetes corporativos y tú, un título de 'VP de Innovación' y un vesting de 4 años. ¿Victoria? ¿Derrota? El episodio del podcast lo debatirá durante 3 horas.<br><br>"+stats;
-    Q.textContent="\"No todas las historias terminan en IPO. La mayoría, de hecho, no.\""; }
-  else if (kind==="broke") { T.textContent="📉 QUIEBRA"; T.style.color="#ff6b6b";
-    X.innerHTML="La caja llegó a cero. Los sueldos no salen, el equipo se va, y el garaje vuelve a guardar coches.<br><br>"+stats;
-    Q.textContent="\"El burn rate es la fuerza de gravedad de las startups.\""; }
-  else if (kind==="crushed") { T.textContent="💥 EL GARAJE HA SIDO ARRASADO"; T.style.color="#ff6b6b";
-    X.innerHTML="Los abogados y sales de MacroCorp no dejaron piedra sobre piedra.<br><br>"+stats;
-    Q.textContent="\"Nunca subestimes a un incumbente con caja infinita y cero escrúpulos.\""; }
-  else { T.textContent="🏢 MACROCORP DOMINA EL MERCADO"; T.style.color="#ff6b6b";
-    X.innerHTML="Lanzaron primero, firmaron a todos, y tu producto llegó tarde a una fiesta que ya había terminado.<br><br>"+stats;
-    Q.textContent="\"En los mercados 'winner-take-all', el segundo lugar es el primer perdedor.\""; }
+    X.innerHTML="You sold Nimbus to MacroCorp. Your team now wears corporate badges and you got a 'VP of Innovation' title with a 4-year vesting schedule. Victory? Defeat? The podcast episode will debate it for 3 hours.<br><br>"+stats;
+    Q.textContent="\"Not every story ends in an IPO. Most, in fact, don't.\""; }
+  else if (kind==="broke") { T.textContent="📉 BANKRUPT"; T.style.color="#ff6b6b";
+    X.innerHTML="The cash hit zero. Payroll bounces, the team walks out, and the garage goes back to storing cars.<br><br>"+stats;
+    Q.textContent="\"Burn rate is the gravity of startups.\""; }
+  else if (kind==="crushed") { T.textContent="💥 THE GARAGE HAS BEEN RAZED"; T.style.color="#ff6b6b";
+    X.innerHTML="MacroCorp's lawyers and sales reps left no stone standing.<br><br>"+stats;
+    Q.textContent="\"Never underestimate an incumbent with infinite cash and zero scruples.\""; }
+  else { T.textContent="🏢 MACROCORP CORNERS THE MARKET"; T.style.color="#ff6b6b";
+    X.innerHTML="They launched first, signed everyone, and your product showed up late to a party that was already over.<br><br>"+stats;
+    Q.textContent="\"In winner-take-all markets, second place is the first loser.\""; }
   S.style.display = "flex";
 }
 
@@ -924,7 +924,7 @@ function loop(ts) {
 function startGame() {
   document.getElementById("intro").style.display="none";
   G.running = true;
-  toast("Bienvenido al garaje. Pon a tu dev a programar (clic derecho sobre el garaje).");
+  toast("Welcome to the garage. Put your dev to work (right-click the garage).");
 }
 requestAnimationFrame(loop);
 </script>
