@@ -69,6 +69,7 @@
   <div class="res">🧑‍🤝‍🧑 Customers <b id="clients">0</b>/<span id="clientGoal">6</span></div>
   <div class="res">⭐ Rep <b id="rep">50</b></div>
   <div id="enemybar"><span id="enemyLabel">MacroCorp</span> <span class="barOuter"><span class="barInner" id="ebarInner"></span></span></div>
+  <div class="res" id="sndToggle" title="Sound on/off" style="cursor:pointer">🔊</div>
 </div>
 
 <div id="wrap">
@@ -114,6 +115,55 @@
 "use strict";
 const cv = document.getElementById("game"), ctx = cv.getContext("2d");
 const W = cv.width, H = cv.height;
+
+// ---------- Sonido (Web Audio, sin assets) ----------
+let AC = null, muted = false;
+function ac() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+function beep(freq, dur, {type="square", vol=0.12, delay=0, slide=0} = {}) {
+  if (muted) return;
+  try {
+    const a = ac(), t = a.currentTime + delay;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq+slide), t+dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g).connect(a.destination);
+    o.start(t); o.stop(t+dur+0.03);
+  } catch(e) {}
+}
+function hiss(dur=0.08, vol=0.08, delay=0) {
+  if (muted) return;
+  try {
+    const a = ac(), t = a.currentTime + delay;
+    const len = Math.max(1, a.sampleRate*dur), buf = a.createBuffer(1, len, a.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1-i/len);
+    const s = a.createBufferSource(), g = a.createGain();
+    s.buffer = buf; g.gain.value = vol;
+    s.connect(g).connect(a.destination); s.start(t);
+  } catch(e) {}
+}
+const SFX = {
+  order:  ()=>{ beep(520,.05,{vol:.07}); beep(700,.05,{vol:.07,delay:.05}); },
+  hire:   ()=>{ beep(440,.07); beep(660,.11,{delay:.07}); },
+  cash:   ()=>{ beep(988,.06,{type:"triangle",vol:.16}); beep(1319,.2,{type:"triangle",vol:.16,delay:.06}); },
+  place:  ()=>{ beep(240,.08,{type:"triangle"}); hiss(.06,.06,.02); },
+  done:   ()=>{ beep(523,.07); beep(659,.07,{delay:.07}); beep(784,.12,{delay:.14}); },
+  hit:    ()=>{ hiss(.05,.07); beep(180,.05,{vol:.06,slide:-80}); },
+  convert:()=>{ beep(740,.06,{type:"triangle"}); beep(880,.1,{type:"triangle",delay:.06}); },
+  death:  ()=>{ beep(300,.15,{slide:-220,vol:.1}); },
+  event:  ()=>{ beep(330,.13,{type:"sawtooth",vol:.09}); beep(415,.13,{type:"sawtooth",vol:.09,delay:.13}); beep(494,.25,{type:"sawtooth",vol:.09,delay:.26}); },
+  start:  ()=>{ [262,330,392,523].forEach((f,i)=>beep(f,.09,{delay:i*.08})); },
+  win:    ()=>{ [523,659,784,1047,784,1047].forEach((f,i)=>beep(f,.14,{type:"triangle",vol:.15,delay:i*.13})); },
+  lose:   ()=>{ [392,330,262,196].forEach((f,i)=>beep(f,.22,{type:"sawtooth",vol:.1,delay:i*.2})); },
+  crash:  ()=>{ beep(600,.9,{type:"sawtooth",vol:.12,slide:-520}); hiss(.5,.1,.1); hiss(.7,.08,.35); },
+};
+let hitCooldown = 0;
 
 // ---------- Estado ----------
 const G = {
@@ -309,6 +359,7 @@ let CH = null;
 function burstBubble() {
   if (G.bubbleBurst) return;
   G.bubbleBurst = true; G.enemyAggro = 0;
+  SFX.crash();
   G.units.forEach(u=>{ if(u.side==="enemy"){ u.hp=0; G.fx.push({x:u.x, y:u.y-14, e:"📉", t:1.2}); } });
   G.customers.forEach(c=>{ if(c.side==="enemy") c.side=null; }); // sus clientes quedan libres
 }
@@ -434,9 +485,15 @@ cv.addEventListener("mouseup", e=>{
   G.selection = G.units.filter(u=>u.sel);
 });
 
+document.getElementById("sndToggle").onclick = function() {
+  muted = !muted;
+  this.textContent = muted ? "🔇" : "🔊";
+};
+
 function orderSelection(x, y) {
   const sel = G.units.filter(u=>u.sel && u.side==="player");
   if (!sel.length) return;
+  SFX.order();
   // ¿objetivo enemigo?
   let tgt = G.units.find(u=>u.side==="enemy" && Math.hypot(u.x-x,u.y-y)<20)
          || G.buildings.find(b=>b.side==="enemy" && inBuilding(b,x,y));
@@ -468,6 +525,7 @@ function recruit(type, cost) {
   G.cash -= cost;
   const u = mkUnit(type, playerHQ.x+50+Math.random()*30, playerHQ.y-40+Math.random()*60, "player");
   G.units.push(u);
+  SFX.hire();
   toast(type==="dev" ? "Dev hired. Smells like coffee and deploys." : "Sales hired. Brings their own rolodex.");
 }
 document.getElementById("bDev").onclick   = ()=>recruit("dev",60);
@@ -487,6 +545,7 @@ function placeBuilding(x, y) {
   const b = mkBuilding(p.type, x, y, "player", false);
   G.buildings.push(b);
   G.placing = null;
+  SFX.place();
   // manda devs seleccionados a construir
   G.units.filter(u=>u.sel && u.type==="dev").forEach(u=>{ u.state="build"; u.target=b; });
   toast("Construction started. Send a dev (right-click) if nobody's building.");
@@ -498,6 +557,7 @@ function maybeFireEvent() {
   const ev = CH.events[G.eventIdx];
   if (G.t < ev.at) return;
   G.eventIdx++; G.paused = true;
+  SFX.event();
   document.getElementById("evTitle").innerHTML = ev.title;
   document.getElementById("evText").innerHTML = ev.text;
   const A = document.getElementById("evA"), B = document.getElementById("evB");
@@ -533,7 +593,7 @@ function update(dt) {
       const hq = c.side==="player"?playerHQ:enemyHQ;
       const d = dist(c, hq);
       if (d<50) { c.dead=true;
-        if (c.side==="player"){ G.clients++; G.cash+=40; toast("Customer signed! +$40 and $3/s in revenue."); }
+        if (c.side==="player"){ G.clients++; G.cash+=40; SFX.cash(); toast("Customer signed! +$40 and $3/s in revenue."); }
         else G.enemyClients++;
       } else { c.x += (hq.x-c.x)/d*45*dt; c.y += (hq.y-c.y)/d*45*dt; }
     } else {
@@ -546,9 +606,12 @@ function update(dt) {
   G.customers = G.customers.filter(c=>!c.dead);
 
   // unidades
+  if (hitCooldown>0) hitCooldown -= dt;
   for (const u of G.units) updateUnit(u, dt);
   separate(dt);
+  const before = G.units.length;
   G.units = G.units.filter(u=>u.hp>0);
+  if (G.units.length < before) SFX.death();
   G.buildings = G.buildings.filter(b=>b.hp>0 || b===playerHQ || b===enemyHQ);
   G.selection = G.units.filter(u=>u.sel);
 
@@ -618,7 +681,10 @@ function attackTarget(u, dt) {
   if (dist(u,t) > stop) moveToward(u, t.x, t.y, dt, stop-2);
   else {
     t.hp -= u.dps*dt;
-    if (Math.random()<dt*6) G.fx.push({x:t.x+(Math.random()-.5)*20, y:t.y+(Math.random()-.5)*20, e:"💢", t:.4});
+    if (Math.random()<dt*6) {
+      G.fx.push({x:t.x+(Math.random()-.5)*20, y:t.y+(Math.random()-.5)*20, e:"💢", t:.4});
+      if (hitCooldown<=0) { SFX.hit(); hitCooldown = 0.22; }
+    }
     if (t.hp<=0) { u.state="idle"; u.target=null;
       if (t===enemyHQ) toast("MacroCorp's tower is coming down!");
     }
@@ -643,7 +709,7 @@ function updateUnit(u, dt) {
         u.convertT += dt * (u.side==="player" ? 1 + G.rep/200 : 1);
         c.pitchBy = u.side;
         if (Math.random()<dt*3) G.fx.push({x:c.x, y:c.y-22, e:"💬", t:.5});
-        if (u.convertT>=3) { c.side=u.side; u.state="idle"; u.target=null; }
+        if (u.convertT>=3) { c.side=u.side; u.state="idle"; u.target=null; if (u.side==="player") SFX.convert(); }
       }
       break;
     }
@@ -658,7 +724,7 @@ function updateUnit(u, dt) {
       if (!b || b.hp<=0) { u.state="idle"; break; }
       if (b.progress>=1) { u.state="idle"; u.target=null; break; }
       if (dist(u,b) > Math.max(b.w,b.h)/2+14) moveToward(u, b.x, b.y, dt);
-      else { b.progress = Math.min(1, b.progress + dt/6); if (b.progress>=1) toast(b.name+" finished."); }
+      else { b.progress = Math.min(1, b.progress + dt/6); if (b.progress>=1) { SFX.done(); toast(b.name+" finished."); } }
       break;
     }
   }
@@ -677,6 +743,9 @@ function updateUnit(u, dt) {
 // ---------- Fin de partida ----------
 function endGame(kind) {
   G.running = false;
+  if (kind==="ipo" || kind==="conquest") SFX.win();
+  else if (kind==="acquihire") SFX.done();
+  else SFX.lose();
   const T = document.getElementById("endTitle"), X = document.getElementById("endText"), Q = document.getElementById("endQuote");
   const S = document.getElementById("endScreen");
   const EN = CH.enemyName;
@@ -1041,6 +1110,7 @@ function startChapter(n) {
   document.getElementById("endScreen").style.display = "none";
   initChapter(n);
   G.running = true; G.paused = false;
+  SFX.start();
   toast(CH.startToast);
 }
 
