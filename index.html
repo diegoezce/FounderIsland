@@ -338,11 +338,15 @@ function inBuilding(b, x, y){ return Math.abs(x-b.x)<b.w/2 && Math.abs(y-b.y)<b.
 cv.addEventListener("contextmenu", e=>e.preventDefault());
 cv.addEventListener("mousemove", e=>{
   const r = cv.getBoundingClientRect();
-  G.mouse.x = e.clientX-r.left; G.mouse.y = e.clientY-r.top;
+  G.mouse.x = (e.clientX-r.left) * (W/r.width);
+  G.mouse.y = (e.clientY-r.top) * (H/r.height);
   if (G.drag) { G.drag.x2 = G.mouse.x; G.drag.y2 = G.mouse.y; }
 });
 cv.addEventListener("mousedown", e=>{
   if (!G.running || G.paused) return;
+  const r = cv.getBoundingClientRect();
+  G.mouse.x = (e.clientX-r.left) * (W/r.width);
+  G.mouse.y = (e.clientY-r.top) * (H/r.height);
   const m = G.mouse;
   if (e.button===0) {
     if (G.placing) { placeBuilding(m.x, m.y); return; }
