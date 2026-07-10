@@ -66,9 +66,9 @@
   <div class="res">💰 <b id="cash">0</b></div>
   <div class="res" id="burn">🔥 -0/s</div>
   <div class="res">🚀 Product <span class="barOuter"><span class="barInner" id="prodBar"></span></span> <b id="prodTxt">0%</b></div>
-  <div class="res">🧑‍🤝‍🧑 Customers <b id="clients">0</b>/6</div>
+  <div class="res">🧑‍🤝‍🧑 Customers <b id="clients">0</b>/<span id="clientGoal">6</span></div>
   <div class="res">⭐ Rep <b id="rep">50</b></div>
-  <div id="enemybar">MacroCorp <span class="barOuter"><span class="barInner" id="ebarInner"></span></span></div>
+  <div id="enemybar"><span id="enemyLabel">MacroCorp</span> <span class="barOuter"><span class="barInner" id="ebarInner"></span></span></div>
 </div>
 
 <div id="wrap">
@@ -76,16 +76,11 @@
 
   <div class="overlay" id="intro">
     <h1>🏙️ FOUNDER CITY</h1>
-    <h2>Chapter 1: The Garage</h2>
-    <p>It's 1998. You quit your corporate job to found <b>Nimbus</b>, a software startup,
-    from a downtown garage. Across the city, the almighty <b style="color:#ff6b6b">MacroCorp</b>
-    wants the same market… and doesn't play fair.</p>
-    <p>Recruit <b>Devs</b> to build the product and <b>Sales</b> to win customers.
-    Watch your <b style="color:#ff8866">burn rate</b>: every employee draws a salary every second.</p>
-    <p><b>Victory:</b> product at 100% and 6 customers (IPO!) or destroy MacroCorp's tower.<br>
-    <b>Defeat:</b> you run out of cash, MacroCorp corners the market, or they raze your garage.</p>
-    <p class="quote">"Is this the greatest business of all time?" — Acquired</p>
-    <button onclick="startGame()">▶ FOUND THE COMPANY</button>
+    <h2 id="chapTitle"></h2>
+    <div id="chapStory"></div>
+    <p class="quote" id="chapQuote"></p>
+    <button id="chapStart"></button>
+    <button id="chapSwitch" style="margin-top:10px;font-size:12px;padding:8px 16px;background:transparent;border-color:#5a7a3a;color:#9fd08a"></button>
   </div>
 
   <div class="overlay" id="eventModal">
@@ -101,7 +96,8 @@
     <h1 id="endTitle"></h1>
     <p id="endText"></p>
     <p class="quote" id="endQuote"></p>
-    <button onclick="location.reload()">↻ TRY AGAIN</button>
+    <button id="nextChap" style="display:none" onclick="startChapter(2)">▶ CONTINUE TO CHAPTER 2: THE BUBBLE</button>
+    <button onclick="location.reload()">↻ BACK TO MENU</button>
   </div>
 </div>
 
@@ -307,26 +303,92 @@ terrain.width = W; terrain.height = H;
     t.restore();
   }
 })();
-// unidades iniciales
-G.units.push(mkUnit("dev", 180, H-140, "player"));
-G.units.push(mkUnit("sales", 150, H-180, "player"));
-for (let i=0;i<4;i++) G.customers.push(mkCustomer());
+// ---------- Capítulos ----------
+let CH = null;
 
-// ---------- Eventos de junta (sabor Acquired) ----------
-const EVENTS = [
-  { at:50, title:"📞 A Sand Hill Road VC calls",
-    text:"A partner at Kleiner Sequoia Ventures heard about Nimbus. He offers <b>$450</b> in exchange for a board seat (and pressure to grow fast: expectations will raise your burn).",
-    a:{ label:"A) Take the investment (+$450, -10 Rep with the bootstrap purists)", fn:()=>{ G.cash+=450; G.rep-=10; toast("Term sheet signed. The bank account breathes."); } },
-    b:{ label:"B) Stay bootstrapped (+15 Rep, customers trust you)", fn:()=>{ G.rep+=15; toast("Proudly bootstrapped. The press loves you."); } } },
-  { at:130, title:"📰 TechCrunch wants your story",
-    text:"A journalist is writing a piece on 'the garage startup taking on MacroCorp'. A PR campaign would cost <b>$120</b> but would draw a wave of curious customers onto the map.",
-    a:{ label:"A) Pay for the PR campaign (-$120, 4 new customers arrive)", fn:()=>{ if(G.cash>=120){G.cash-=120; for(let i=0;i<4;i++){const c=mkCustomer(); c.x=playerHQ.x+80+Math.random()*120; c.y=playerHQ.y-60-Math.random()*120; G.customers.push(c);} toast("The story goes viral! Customers arrive.");} else toast("You can't afford it…"); } },
-    b:{ label:"B) 'The product speaks for itself' (+5 Rep)", fn:()=>{ G.rep+=5; toast("Founder humility. The story runs anyway, but small."); } } },
-  { at:210, title:"💼 MacroCorp wants to buy you",
-    text:"MacroCorp's CEO invites you to lunch. On the table: <b>immediate acquisition</b>. Your team would join their payroll and Nimbus would disappear. 'It's an offer you shouldn't refuse,' he smiles.",
-    a:{ label:"A) Sell the company (end of chapter: acqui-hire)", fn:()=>{ endGame("acquihire"); } },
-    b:{ label:"B) Turn down the offer (MacroCorp gets aggressive…)", fn:()=>{ G.enemyAggro=1.8; G.rep+=10; toast("'You'll regret this,' he says as he picks up the check."); } } },
-];
+function burstBubble() {
+  if (G.bubbleBurst) return;
+  G.bubbleBurst = true; G.enemyAggro = 0;
+  G.units.forEach(u=>{ if(u.side==="enemy"){ u.hp=0; G.fx.push({x:u.x, y:u.y-14, e:"📉", t:1.2}); } });
+  G.customers.forEach(c=>{ if(c.side==="enemy") c.side=null; }); // sus clientes quedan libres
+}
+
+const CHAPTERS = {
+  1: {
+    title:"Chapter 1: The Garage",
+    quote:'"Is this the greatest business of all time?" — Acquired',
+    startLabel:"▶ FOUND THE COMPANY",
+    switchLabel:"Skip ahead → Chapter 2: The Bubble",
+    startToast:"Welcome to the garage. Put your dev to work (right-click the garage).",
+    enemyName:"MacroCorp", enemyColor:"#c02020",
+    startCash:600, startUnits:[["dev",180,H-140],["sales",150,H-180]],
+    winClients:6, enemyWinClients:4, spawnEvery:16, maxEnemies:6, enemyProdRate:0.33, firstSpawn:12,
+    introHTML:
+      `<p>It's 1998. You quit your corporate job to found <b>Nimbus</b>, a software startup,
+      from a downtown garage. Across the city, the almighty <b style="color:#ff6b6b">MacroCorp</b>
+      wants the same market… and doesn't play fair.</p>
+      <p>Recruit <b>Devs</b> to build the product and <b>Sales</b> to win customers.
+      Watch your <b style="color:#ff8866">burn rate</b>: every employee draws a salary every second.</p>
+      <p><b>Victory:</b> product at 100% and 6 customers (IPO!) or destroy MacroCorp's tower.<br>
+      <b>Defeat:</b> you run out of cash, MacroCorp corners the market, or they raze your garage.</p>`,
+    victoryTitle:"🔔 IPO! NIMBUS GOES PUBLIC",
+    victoryText:"Product shipped, loyal customers, and the garage is bursting at the seams. The NASDAQ bell rings. MacroCorp issues a press release 'welcoming you to the competition'.",
+    victoryQuote:'"And that, folks, was only chapter one." — Acquired',
+    events: [
+      { at:50, title:"📞 A Sand Hill Road VC calls",
+        text:"A partner at Kleiner Sequoia Ventures heard about Nimbus. He offers <b>$450</b> in exchange for a board seat (and pressure to grow fast: expectations will raise your burn).",
+        a:{ label:"A) Take the investment (+$450, -10 Rep with the bootstrap purists)", fn:()=>{ G.cash+=450; G.rep-=10; toast("Term sheet signed. The bank account breathes."); } },
+        b:{ label:"B) Stay bootstrapped (+15 Rep, customers trust you)", fn:()=>{ G.rep+=15; toast("Proudly bootstrapped. The press loves you."); } } },
+      { at:130, title:"📰 TechCrunch wants your story",
+        text:"A journalist is writing a piece on 'the garage startup taking on MacroCorp'. A PR campaign would cost <b>$120</b> but would draw a wave of curious customers onto the map.",
+        a:{ label:"A) Pay for the PR campaign (-$120, 4 new customers arrive)", fn:()=>{ if(G.cash>=120){G.cash-=120; for(let i=0;i<4;i++){const c=mkCustomer(); c.x=playerHQ.x+80+Math.random()*120; c.y=playerHQ.y-60-Math.random()*120; G.customers.push(c);} toast("The story goes viral! Customers arrive.");} else toast("You can't afford it…"); } },
+        b:{ label:"B) 'The product speaks for itself' (+5 Rep)", fn:()=>{ G.rep+=5; toast("Founder humility. The story runs anyway, but small."); } } },
+      { at:210, title:"💼 MacroCorp wants to buy you",
+        text:"MacroCorp's CEO invites you to lunch. On the table: <b>immediate acquisition</b>. Your team would join their payroll and Nimbus would disappear. 'It's an offer you shouldn't refuse,' he smiles.",
+        a:{ label:"A) Sell the company (end of chapter: acqui-hire)", fn:()=>{ endGame("acquihire"); } },
+        b:{ label:"B) Turn down the offer (MacroCorp gets aggressive…)", fn:()=>{ G.enemyAggro=1.8; G.rep+=10; toast("'You'll regret this,' he says as he picks up the check."); } } },
+    ],
+  },
+  2: {
+    title:"Chapter 2: The Bubble",
+    quote:'"Only when the tide goes out do you discover who\'s been swimming naked." — Buffett, quoted on Acquired',
+    startLabel:"▶ OPEN THE NEW OFFICE",
+    switchLabel:"← Back to Chapter 1: The Garage",
+    startToast:"New office, same hustle. Dotbomb is already stealing your leads.",
+    enemyName:"Dotbomb", enemyColor:"#7a3ac0",
+    startCash:900, startUnits:[["dev",180,H-140],["dev",205,H-115],["sales",150,H-180],["sales",215,H-160]],
+    winClients:10, enemyWinClients:6, spawnEvery:13, maxEnemies:7, enemyProdRate:0.36, firstSpawn:8,
+    introHTML:
+      `<p>Late 1999. The IPO money is real, the new office has a foosball table, and Nimbus
+      is the toast of the city. But a VC-fueled clone, <b style="color:#c09aff">Dotbomb</b>, is burning
+      $2M a month to steal your market — free pizza, billboard blitzes, salespeople everywhere.</p>
+      <p>Word on the street says the market can't stay this hot forever. Dotbomb grows faster than
+      you… but they have no revenue. <b>If you can hold out until the bubble bursts, they won't survive it.</b></p>
+      <p><b>Victory:</b> product at 100% and 10 customers (the market learns you're built to last), or destroy Dotbomb's tower.<br>
+      <b>Defeat:</b> you run out of cash, Dotbomb corners the market before the crash, or they raze your office.</p>`,
+    victoryTitle:"🏛️ NIMBUS 2.0 — BUILT TO LAST",
+    victoryText:"While the streets fill with liquidated Aeron chairs, Nimbus posts its first profitable quarter. The analysts who called you 'boring' now call you 'disciplined'. You survived the crash.",
+    victoryQuote:'"The companies that survive the winter own the spring." — Acquired',
+    events: [
+      { at:45, title:"🏈 The Super Bowl ad slot",
+        text:"Dotbomb bought two Super Bowl spots. Your agency found one last slot for <b>$350</b>. 'Everyone who's anyone is doing it,' they insist.",
+        a:{ label:"A) Buy the ad (-$350, 6 customers flood the map)", fn:()=>{ if(G.cash>=350){G.cash-=350; for(let i=0;i<6;i++) G.customers.push(mkCustomer()); toast("Two puppets and a sock later… the phones ring!");} else toast("You can't afford it…"); } },
+        b:{ label:"B) Grow organic (+10 Rep, word of mouth compounds)", fn:()=>{ G.rep+=10; toast("No ad. Your customers do the marketing for free."); } } },
+      { at:115, title:"🎯 Dotbomb tries to poach your senior dev",
+        text:"They offered your best engineer double salary, a BMW lease and 'pre-IPO options'. She's in your office, resignation letter in hand.",
+        a:{ label:"A) Pay a retention bonus (-$150, she stays)", fn:()=>{ if(G.cash>=150){G.cash-=150; toast("Retention bonus paid. Loyalty: bought.");} else { const d=G.units.find(u=>u.type==="dev"&&u.side==="player"); if(d){d.hp=0; G.fx.push({x:d.x,y:d.y-20,e:"👋",t:1.2});} toast("You couldn't pay. She walks."); } } },
+        b:{ label:"B) Wish her well (+5 Rep, you lose the dev)", fn:()=>{ const d=G.units.find(u=>u.type==="dev"&&u.side==="player"); if(d){d.hp=0; G.fx.push({x:d.x,y:d.y-20,e:"👋",t:1.2});} G.rep+=5; toast("She ships Dotbomb code now. It happens."); } } },
+      { at:190, title:"📊 Your CFO smells trouble",
+        text:"'The P/E ratios make no sense. Companies with no revenue are worth billions. When this turns, cash will be king.' She proposes trimming burn <b>now</b>.",
+        a:{ label:"A) Cut burn (salaries -20%, -5 Rep: 'layoff rumors')", fn:()=>{ G.salaryMul=0.8; G.rep-=5; toast("Belts tightened. The team grumbles, the runway grows."); } },
+        b:{ label:"B) Keep spending, we're winning (+5 Rep)", fn:()=>{ G.rep+=5; toast("Full speed ahead. What could go wrong?"); } } },
+      { at:290, title:"💥 March 10, 2000 — the bubble bursts",
+        text:"The NASDAQ craters. Dotbomb's next round evaporates mid-signature. Their CEO is on TV explaining that 'profitability was always the plan'. Their assets are for sale <b>today</b>.",
+        a:{ label:"A) Buy Dotbomb's customer list (-$200, +3 customers arrive)", fn:()=>{ burstBubble(); if(G.cash>=200){G.cash-=200; for(let i=0;i<3;i++){const c=mkCustomer(); c.x=playerHQ.x+80+Math.random()*120; c.y=playerHQ.y-60-Math.random()*120; G.customers.push(c);} toast("Their churn is now your pipeline.");} else toast("No cash for vulture shopping. Still, they're gone."); } },
+        b:{ label:"B) Let them burn (+10 Rep, dignity intact)", fn:()=>{ burstBubble(); G.rep+=10; toast("You send their team a sympathetic email. And a job posting."); } } },
+    ],
+  },
+};
 
 // ---------- Utilidades ----------
 const dist = (a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
@@ -432,8 +494,8 @@ function placeBuilding(x, y) {
 
 // ---------- Eventos ----------
 function maybeFireEvent() {
-  if (G.eventIdx >= EVENTS.length) return;
-  const ev = EVENTS[G.eventIdx];
+  if (G.eventIdx >= CH.events.length) return;
+  const ev = CH.events[G.eventIdx];
   if (G.t < ev.at) return;
   G.eventIdx++; G.paused = true;
   document.getElementById("evTitle").innerHTML = ev.title;
@@ -456,7 +518,7 @@ function update(dt) {
 
   // economía
   const staff = G.units.filter(u=>u.side==="player").length;
-  const burn = staff*SALARY, rev = G.clients*CLIENT_REV;
+  const burn = staff*SALARY*G.salaryMul, rev = G.clients*CLIENT_REV;
   G.cash += (rev-burn)*dt;
   G.revenue = rev; G.burnNow = burn;
 
@@ -499,13 +561,15 @@ function update(dt) {
   for (const b of G.buildings) if (b.type==="cafe" && b.progress>=1)
     for (const u of G.units) if (u.side==="player" && dist(u,b)<90) u.hp = Math.min(u.maxHp, u.hp+4*dt);
 
-  // IA enemiga
-  G.enemyProduct = Math.min(100, G.enemyProduct + 0.33*G.enemyAggro*dt);
-  G.nextEnemySpawn -= dt*G.enemyAggro;
-  const enemies = G.units.filter(u=>u.side==="enemy");
-  if (G.nextEnemySpawn<=0 && enemies.length<6 && enemyHQ.hp>0) {
-    G.units.push(mkUnit("esales", enemyHQ.x-50, enemyHQ.y+50, "enemy"));
-    G.nextEnemySpawn = 16;
+  // IA enemiga (se apaga si la burbuja ya estalló)
+  if (!G.bubbleBurst) {
+    G.enemyProduct = Math.min(100, G.enemyProduct + CH.enemyProdRate*G.enemyAggro*dt);
+    G.nextEnemySpawn -= dt*Math.max(1, G.enemyAggro);
+    const enemies = G.units.filter(u=>u.side==="enemy");
+    if (G.nextEnemySpawn<=0 && enemies.length<CH.maxEnemies && enemyHQ.hp>0) {
+      G.units.push(mkUnit("esales", enemyHQ.x-50, enemyHQ.y+50, "enemy"));
+      G.nextEnemySpawn = CH.spawnEvery;
+    }
   }
 
   // fx
@@ -615,25 +679,28 @@ function endGame(kind) {
   G.running = false;
   const T = document.getElementById("endTitle"), X = document.getElementById("endText"), Q = document.getElementById("endQuote");
   const S = document.getElementById("endScreen");
+  const EN = CH.enemyName;
   const stats = `Run time: ${Math.floor(G.t)}s · Final cash: $${Math.floor(G.cash)} · Product: ${Math.floor(G.product)}% · Customers: ${G.clients} · Rep: ${G.rep}`;
-  if (kind==="ipo") { T.textContent="🔔 IPO! NIMBUS GOES PUBLIC"; T.style.color="#7ec850";
-    X.innerHTML="Product shipped, loyal customers, and the garage is bursting at the seams. The NASDAQ bell rings. MacroCorp issues a press release 'welcoming you to the competition'.<br><br>"+stats;
-    Q.textContent="\"And that, folks, was only chapter one.\" — Acquired"; }
-  else if (kind==="conquest") { T.textContent="🏆 MACROCORP HAS FALLEN"; T.style.color="#7ec850";
+  if (kind==="ipo") { T.textContent=CH.victoryTitle; T.style.color="#7ec850";
+    X.innerHTML=CH.victoryText+"<br><br>"+stats;
+    Q.textContent=CH.victoryQuote; }
+  else if (kind==="conquest") { T.textContent=`🏆 ${EN.toUpperCase()} HAS FALLEN`; T.style.color="#7ec850";
     X.innerHTML="Against all odds, your army of sales reps dismantled their tower pitch by pitch. The market is yours.<br><br>"+stats;
     Q.textContent="\"Sometimes the best defense is a good roadmap… and a better sales team.\""; }
   else if (kind==="acquihire") { T.textContent="🤝 ACQUI-HIRE"; T.style.color="#ffd766";
-    X.innerHTML="You sold Nimbus to MacroCorp. Your team now wears corporate badges and you got a 'VP of Innovation' title with a 4-year vesting schedule. Victory? Defeat? The podcast episode will debate it for 3 hours.<br><br>"+stats;
+    X.innerHTML=`You sold Nimbus to ${EN}. Your team now wears corporate badges and you got a 'VP of Innovation' title with a 4-year vesting schedule. Victory? Defeat? The podcast episode will debate it for 3 hours.<br><br>`+stats;
     Q.textContent="\"Not every story ends in an IPO. Most, in fact, don't.\""; }
   else if (kind==="broke") { T.textContent="📉 BANKRUPT"; T.style.color="#ff6b6b";
-    X.innerHTML="The cash hit zero. Payroll bounces, the team walks out, and the garage goes back to storing cars.<br><br>"+stats;
+    X.innerHTML="The cash hit zero. Payroll bounces, the team walks out, and the office goes dark.<br><br>"+stats;
     Q.textContent="\"Burn rate is the gravity of startups.\""; }
-  else if (kind==="crushed") { T.textContent="💥 THE GARAGE HAS BEEN RAZED"; T.style.color="#ff6b6b";
-    X.innerHTML="MacroCorp's lawyers and sales reps left no stone standing.<br><br>"+stats;
-    Q.textContent="\"Never underestimate an incumbent with infinite cash and zero scruples.\""; }
-  else { T.textContent="🏢 MACROCORP CORNERS THE MARKET"; T.style.color="#ff6b6b";
+  else if (kind==="crushed") { T.textContent="💥 YOUR HQ HAS BEEN RAZED"; T.style.color="#ff6b6b";
+    X.innerHTML=`${EN}'s lawyers and sales reps left no stone standing.<br><br>`+stats;
+    Q.textContent="\"Never underestimate a competitor with infinite cash and zero scruples.\""; }
+  else { T.textContent=`🏢 ${EN.toUpperCase()} CORNERS THE MARKET`; T.style.color="#ff6b6b";
     X.innerHTML="They launched first, signed everyone, and your product showed up late to a party that was already over.<br><br>"+stats;
     Q.textContent="\"In winner-take-all markets, second place is the first loser.\""; }
+  document.getElementById("nextChap").style.display =
+    (G.chapter===1 && (kind==="ipo" || kind==="conquest")) ? "block" : "none";
   S.style.display = "flex";
 }
 
@@ -642,8 +709,8 @@ function checkEnd() {
   if (G.cash <= 0) endGame("broke");
   else if (playerHQ.hp <= 0) endGame("crushed");
   else if (enemyHQ.hp <= 0) endGame("conquest");
-  else if (G.product >= 100 && G.clients >= 6) endGame("ipo");
-  else if (G.enemyProduct >= 100 && G.enemyClients >= 4) endGame("dominated");
+  else if (G.product >= 100 && G.clients >= CH.winClients) endGame("ipo");
+  else if (G.enemyProduct >= 100 && G.enemyClients >= CH.enemyWinClients) endGame("dominated");
 }
 
 // ---------- Render ----------
@@ -753,19 +820,20 @@ function drawBuilding(b) {
   } else if (b.type==="ehq") { // torre corporativa
     ctx.fillStyle="#3a3f4a"; ctx.fillRect(x-w/2, y-h/2, w, h);
     ctx.fillStyle="#2a2e36"; ctx.fillRect(x+w/2-10, y-h/2, 10, h);
-    // ventanas iluminadas (parpadeo lento)
+    // ventanas iluminadas (parpadeo lento; se apagan si la empresa colapsó)
     for (let r=0;r<6;r++) for (let c2=0;c2<4;c2++) {
-      const lit = Math.sin(animT*0.7 + r*1.7 + c2*2.3) > -0.3;
+      const lit = !G.bubbleBurst && Math.sin(animT*0.7 + r*1.7 + c2*2.3) > -0.3;
       ctx.fillStyle = lit ? "#ffdf8a" : "#1a1d24";
       ctx.fillRect(x-w/2+7+c2*17, y-h/2+8+r*12, 10, 7);
     }
     // antena y logo
     ctx.strokeStyle="#888"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(x, y-h/2); ctx.lineTo(x, y-h/2-14); ctx.stroke();
-    ctx.fillStyle = Math.sin(animT*3)>0 ? "#ff4444" : "#801010";
+    ctx.fillStyle = !G.bubbleBurst && Math.sin(animT*3)>0 ? "#ff4444" : "#801010";
     ctx.beginPath(); ctx.arc(x, y-h/2-14, 3, 0, 7); ctx.fill();
-    ctx.fillStyle="#c02020"; roundRect(ctx, x-30, y+h/2-14, 60, 11, 2); ctx.fill();
-    ctx.font="bold 8px monospace"; ctx.fillStyle="#fff"; ctx.fillText("MACROCORP", x, y+h/2-8);
+    ctx.fillStyle = CH ? CH.enemyColor : "#c02020"; roundRect(ctx, x-30, y+h/2-14, 60, 11, 2); ctx.fill();
+    ctx.font="bold 8px monospace"; ctx.fillStyle="#fff";
+    ctx.fillText((CH ? CH.enemyName : "MacroCorp").toUpperCase(), x, y+h/2-8);
   } else if (b.type==="server") { // rack con LEDs
     ctx.fillStyle="#23262e"; roundRect(ctx, x-w/2, y-h/2, w, h, 4); ctx.fill();
     ctx.strokeStyle="#0a0c10"; ctx.lineWidth=2; ctx.stroke();
@@ -842,7 +910,7 @@ function draw() {
     }
     if (c.side) {
       ctx.font="9px monospace"; ctx.textAlign="center";
-      const label = c.side==="player"?"→Nimbus":"→MacroCorp";
+      const label = c.side==="player" ? "→Nimbus" : "→"+(CH?CH.enemyName:"");
       ctx.fillStyle="rgba(0,0,0,0.5)"; ctx.fillText(label, c.x+1, c.y+19);
       ctx.fillStyle = c.side==="player"?"#b8f0a0":"#ffa8a8"; ctx.fillText(label, c.x, c.y+18);
     }
@@ -938,11 +1006,45 @@ function loop(ts) {
   draw(); updateHUD();
   requestAnimationFrame(loop);
 }
-function startGame() {
-  document.getElementById("intro").style.display="none";
-  G.running = true;
-  toast("Welcome to the garage. Put your dev to work (right-click the garage).");
+function initChapter(n) {
+  CH = CHAPTERS[n]; G.chapter = n;
+  G.cash = CH.startCash; G.rep = 50; G.product = 0; G.clients = 0; G.revenue = 0;
+  G.enemyProduct = 0; G.enemyClients = 0; G.enemyAggro = 1;
+  G.units = []; G.customers = []; G.fx = []; G.selection = [];
+  G.t = 0; G.eventIdx = 0; G.nextCustomer = 5; G.nextEnemySpawn = CH.firstSpawn;
+  G.salaryMul = 1; G.bubbleBurst = false; G.placing = null; G.drag = null;
+  playerHQ.hp = playerHQ.maxHp; enemyHQ.hp = enemyHQ.maxHp;
+  enemyHQ.name = CH.enemyName + " Tower";
+  playerHQ.name = n===1 ? "Nimbus Garage" : "Nimbus HQ";
+  G.buildings = [playerHQ, enemyHQ];
+  CH.startUnits.forEach(([type,x,y]) => G.units.push(mkUnit(type, x, y, "player")));
+  for (let i=0;i<4;i++) G.customers.push(mkCustomer());
+  document.getElementById("clientGoal").textContent = CH.winClients;
+  document.getElementById("enemyLabel").textContent = CH.enemyName;
 }
+
+let introChapter = 1;
+function showChapterIntro(n) {
+  introChapter = n;
+  const c = CHAPTERS[n];
+  document.getElementById("chapTitle").textContent = c.title;
+  document.getElementById("chapStory").innerHTML = c.introHTML;
+  document.getElementById("chapQuote").textContent = c.quote;
+  document.getElementById("chapStart").textContent = c.startLabel;
+  document.getElementById("chapSwitch").textContent = c.switchLabel;
+}
+document.getElementById("chapStart").onclick = ()=>startChapter(introChapter);
+document.getElementById("chapSwitch").onclick = ()=>showChapterIntro(introChapter===1 ? 2 : 1);
+
+function startChapter(n) {
+  document.getElementById("intro").style.display = "none";
+  document.getElementById("endScreen").style.display = "none";
+  initChapter(n);
+  G.running = true; G.paused = false;
+  toast(CH.startToast);
+}
+
+showChapterIntro(1);
 requestAnimationFrame(loop);
 </script>
 </body>

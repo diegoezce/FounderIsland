@@ -1,7 +1,9 @@
 # 🏙️ Founder City
 
 A startup real-time strategy game inspired by the [Acquired](https://www.acquired.fm/) podcast.
-**Chapter 1: The Garage** — found Nimbus, hire devs and sales, watch your burn rate, and take on MacroCorp.
+
+- **Chapter 1: The Garage** (1998) — found Nimbus, hire devs and sales, watch your burn rate, and take on the incumbent MacroCorp.
+- **Chapter 2: The Bubble** (1999–2000) — after your IPO, a VC-fueled clone called Dotbomb outspends you everywhere. They grow faster than you, but they have no revenue: survive until March 10, 2000, and the crash will do the rest.
 
 ## Play locally
 
