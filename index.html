@@ -880,7 +880,35 @@ function drawBuilding(b) {
     ctx.font="22px serif"; ctx.fillText("🚧", x, y);
     return;
   }
-  if (b.type==="hq") { // garaje: paredes crema, techo a dos aguas, puerta de garaje
+  if (b.type==="hq" && G.chapter===2) { // oficina moderna post-IPO
+    // cuerpo principal con cara lateral sombreada
+    ctx.fillStyle="#5b6b78"; ctx.fillRect(x-w/2, y-h/2, w, h);
+    ctx.fillStyle="#46535e"; ctx.fillRect(x+w/2-8, y-h/2, 8, h);
+    // franjas de cristal (3 pisos)
+    for (let r=0;r<3;r++) {
+      for (let c2=0;c2<4;c2++) {
+        const lit = Math.sin(animT*0.5 + r*2.1 + c2*1.3) > -0.55;
+        ctx.fillStyle = lit ? "#a8d4e8" : "#7fa8bc";
+        ctx.fillRect(x-w/2+6+c2*17, y-h/2+8+r*15, 13, 10);
+        ctx.fillStyle="rgba(255,255,255,0.35)";
+        ctx.fillRect(x-w/2+6+c2*17, y-h/2+8+r*15, 13, 3);
+      }
+    }
+    // entrada de vidrio
+    ctx.fillStyle="#3a758c"; ctx.fillRect(x-10, y+h/2-14, 20, 14);
+    ctx.strokeStyle="#26505f"; ctx.lineWidth=1;
+    ctx.strokeRect(x-10, y+h/2-14, 20, 14);
+    ctx.beginPath(); ctx.moveTo(x, y+h/2-14); ctx.lineTo(x, y+h/2); ctx.stroke();
+    // toldo de entrada
+    ctx.fillStyle="#2a3a1a"; ctx.fillRect(x-14, y+h/2-16, 28, 4);
+    // equipo de clima en la azotea
+    ctx.fillStyle="#8a949c"; ctx.fillRect(x+w/2-24, y-h/2-6, 14, 8);
+    ctx.strokeStyle="#5a646c"; ctx.strokeRect(x+w/2-24, y-h/2-6, 14, 8);
+    // letrero corporativo
+    ctx.fillStyle="#2a3a1a"; roundRect(ctx, x-30, y-h/2-14, 60, 12, 3); ctx.fill();
+    ctx.strokeStyle="#9fd08a"; ctx.lineWidth=1; ctx.stroke();
+    ctx.font="bold 9px monospace"; ctx.fillStyle="#9fd08a"; ctx.fillText("NIMBUS INC.", x, y-h/2-8);
+  } else if (b.type==="hq") { // garaje: paredes crema, techo a dos aguas, puerta de garaje
     ctx.fillStyle="#c9bfa0"; ctx.fillRect(x-w/2, y-h/2+12, w, h-12);
     ctx.fillStyle="#b0a488"; ctx.fillRect(x-w/2, y-h/2+12, w, 4);
     // techo
