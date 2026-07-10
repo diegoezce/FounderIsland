@@ -1,0 +1,13 @@
+{
+  "name": "founder-city",
+  "version": "0.1.0",
+  "description": "Founder City — a startup RTS inspired by the Acquired podcast. Chapter 1: The Garage.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
