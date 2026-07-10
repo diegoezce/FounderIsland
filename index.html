@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Founder City — Chapter 1: The Garage</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -9,11 +10,15 @@
     background:#0b0e14; color:#e8e3d0; font-family:"Courier New", monospace;
     display:flex; flex-direction:column; align-items:center; min-height:100vh; user-select:none;
   }
-  #wrap { position:relative; margin-top:8px; }
-  canvas { display:block; border:3px solid #3a4a2a; background:#2d4a1e; cursor:crosshair; }
+  #wrap { position:relative; margin-top:8px; width:100%; max-width:966px; }
+  canvas {
+    display:block; border:3px solid #3a4a2a; background:#2d4a1e; cursor:crosshair;
+    width:100%; height:auto; touch-action:none; box-sizing:border-box;
+  }
   /* ---------- HUD superior ---------- */
   #hud {
-    width:960px; display:flex; gap:18px; align-items:center; padding:8px 14px;
+    width:100%; max-width:960px; box-sizing:border-box; display:flex; flex-wrap:wrap;
+    gap:10px 18px; align-items:center; padding:8px 14px;
     background:#141a10; border:3px solid #3a4a2a; border-bottom:none; font-size:14px;
   }
   .res { display:flex; gap:6px; align-items:center; }
@@ -25,7 +30,8 @@
   #ebarInner { background:#d24b4b; }
   /* ---------- Panel de comandos ---------- */
   #panel {
-    width:960px; display:flex; gap:10px; padding:10px 14px; align-items:center;
+    width:100%; max-width:960px; box-sizing:border-box; display:flex; flex-wrap:wrap;
+    gap:10px; padding:10px 14px; align-items:center;
     background:#141a10; border:3px solid #3a4a2a; border-top:none; min-height:76px;
   }
   button.cmd {
@@ -57,7 +63,22 @@
   #eventModal h3 { color:#ffd766; margin-bottom:12px; font-size:18px; }
   #eventModal p { font-size:14px; line-height:1.55; margin-bottom:16px; }
   #eventModal button { display:block; width:100%; margin:8px 0 0; text-align:left; font-size:14px; }
-  #help { width:960px; font-size:11px; color:#7a8a6a; padding:6px 4px; }
+  #help { width:100%; max-width:960px; box-sizing:border-box; font-size:11px; color:#7a8a6a; padding:6px 4px; }
+  /* ---------- Pantallas chicas ---------- */
+  @media (max-width: 700px) {
+    #hud { font-size:11px; gap:6px 10px; padding:6px 8px; }
+    #panel { padding:8px; gap:6px; }
+    button.cmd { font-size:11px; padding:6px 8px; flex:1 1 40%; }
+    #msg { max-width:100%; flex-basis:100%; text-align:left; font-size:11px; }
+    .overlay { padding:14px; overflow-y:auto; justify-content:flex-start; }
+    .overlay h1 { font-size:20px; margin-top:6px; }
+    .overlay h2 { font-size:13px; margin-bottom:10px; }
+    .overlay p { font-size:11px; line-height:1.45; margin-bottom:8px; }
+    .overlay button { font-size:13px; padding:9px 18px; margin-top:10px; }
+    #eventModal .box { padding:14px 16px; }
+    #eventModal h3 { font-size:14px; }
+    #eventModal p { font-size:12px; }
+  }
 </style>
 </head>
 <body>
@@ -109,7 +130,7 @@
   <button class="cmd" id="bCafe">☕ Build Coffee Shop<br><small>$100 · restores morale</small></button>
   <div id="msg">Select units by clicking or dragging. Right-click: move / attack / convert customers / code (dev → garage).</div>
 </div>
-<div id="help">Devs: right-click your garage = write code · right-click a construction site = build. Sales: right-click a customer 🧍 = sales pitch. Pitch battles against MacroCorp sales happen automatically at close range.</div>
+<div id="help">Devs: right-click your garage = write code · right-click a construction site = build. Sales: right-click a customer 🧍 = sales pitch. Pitch battles happen automatically at close range. Touch: tap = select · drag = box-select · press &amp; hold = order.</div>
 
 <script>
 "use strict";
@@ -458,31 +479,18 @@ function toast(s){ document.getElementById("msg").textContent = s; G.msgTimer = 
 function bCenter(b){ return {x:b.x, y:b.y}; }
 function inBuilding(b, x, y){ return Math.abs(x-b.x)<b.w/2 && Math.abs(y-b.y)<b.h/2; }
 
-// ---------- Input ----------
-cv.addEventListener("contextmenu", e=>e.preventDefault());
-cv.addEventListener("mousemove", e=>{
+// ---------- Input (mouse + touch) ----------
+function canvasPos(clientX, clientY) {
   const r = cv.getBoundingClientRect();
-  G.mouse.x = (e.clientX-r.left) * (W/r.width);
-  G.mouse.y = (e.clientY-r.top) * (H/r.height);
-  if (G.drag) { G.drag.x2 = G.mouse.x; G.drag.y2 = G.mouse.y; }
-});
-cv.addEventListener("mousedown", e=>{
-  if (!G.running || G.paused) return;
-  const r = cv.getBoundingClientRect();
-  G.mouse.x = (e.clientX-r.left) * (W/r.width);
-  G.mouse.y = (e.clientY-r.top) * (H/r.height);
-  const m = G.mouse;
-  if (e.button===0) {
-    if (G.placing) { placeBuilding(m.x, m.y); return; }
-    G.drag = {x1:m.x, y1:m.y, x2:m.x, y2:m.y};
-  } else if (e.button===2) {
-    if (G.placing) { G.placing=null; toast("Construction canceled."); return; }
-    orderSelection(m.x, m.y);
-  }
-});
-cv.addEventListener("mouseup", e=>{
-  if (e.button!==0 || !G.drag) return;
-  const d = G.drag; G.drag=null;
+  return { x:(clientX-r.left)*(W/r.width), y:(clientY-r.top)*(H/r.height) };
+}
+function primaryDown(x, y) { // botón izquierdo / dedo
+  if (G.placing) { placeBuilding(x, y); return; }
+  G.drag = {x1:x, y1:y, x2:x, y2:y};
+}
+function primaryUp() { // soltar: selección por clic o por caja
+  if (!G.drag) return;
+  const d = G.drag; G.drag = null;
   const x1=Math.min(d.x1,d.x2), x2=Math.max(d.x1,d.x2), y1=Math.min(d.y1,d.y2), y2=Math.max(d.y1,d.y2);
   const isClick = (x2-x1<6 && y2-y1<6);
   G.units.forEach(u=>u.sel=false);
@@ -494,7 +502,63 @@ cv.addEventListener("mouseup", e=>{
     for (const u of G.units) if (u.side==="player" && u.x>=x1&&u.x<=x2&&u.y>=y1&&u.y<=y2) u.sel=true;
   }
   G.selection = G.units.filter(u=>u.sel);
+}
+function secondaryAction(x, y) { // botón derecho / long-press
+  if (G.placing) { G.placing=null; toast("Construction canceled."); return; }
+  orderSelection(x, y);
+}
+
+cv.addEventListener("contextmenu", e=>e.preventDefault());
+cv.addEventListener("mousemove", e=>{
+  G.mouse = canvasPos(e.clientX, e.clientY);
+  if (G.drag) { G.drag.x2 = G.mouse.x; G.drag.y2 = G.mouse.y; }
 });
+cv.addEventListener("mousedown", e=>{
+  if (!G.running || G.paused) return;
+  G.mouse = canvasPos(e.clientX, e.clientY);
+  if (e.button===0) primaryDown(G.mouse.x, G.mouse.y);
+  else if (e.button===2) secondaryAction(G.mouse.x, G.mouse.y);
+});
+cv.addEventListener("mouseup", e=>{
+  if (e.button===0) primaryUp();
+});
+
+// Touch: tap = seleccionar · arrastrar = caja de selección · mantener ~0.5s = orden (clic derecho)
+let touchTimer=null, touchStartP=null, longFired=false;
+cv.addEventListener("touchstart", e=>{
+  if (!G.running || G.paused) return;
+  e.preventDefault();
+  const t = e.touches[0], p = canvasPos(t.clientX, t.clientY);
+  G.mouse = p; touchStartP = p; longFired = false;
+  touchTimer = setTimeout(()=>{
+    longFired = true; G.drag = null;
+    G.fx.push({x:p.x, y:p.y, e:"👉", t:.5});
+    secondaryAction(p.x, p.y);
+  }, 450);
+}, {passive:false});
+cv.addEventListener("touchmove", e=>{
+  if (!touchStartP) return;
+  e.preventDefault();
+  const t = e.touches[0], p = canvasPos(t.clientX, t.clientY);
+  G.mouse = p;
+  if (longFired) return;
+  if (Math.hypot(p.x-touchStartP.x, p.y-touchStartP.y) > 12) {
+    clearTimeout(touchTimer);
+    if (!G.drag && !G.placing) G.drag = {x1:touchStartP.x, y1:touchStartP.y, x2:p.x, y2:p.y};
+  }
+  if (G.drag) { G.drag.x2 = p.x; G.drag.y2 = p.y; }
+}, {passive:false});
+cv.addEventListener("touchend", e=>{
+  clearTimeout(touchTimer);
+  if (!touchStartP) return;
+  e.preventDefault();
+  const p = touchStartP; touchStartP = null;
+  if (longFired) { longFired=false; return; }
+  if (G.drag) { primaryUp(); return; }               // fin de caja de selección
+  if (G.placing) { placeBuilding(G.mouse.x, G.mouse.y); return; }
+  G.drag = {x1:p.x, y1:p.y, x2:p.x, y2:p.y};         // tap corto = clic de selección
+  primaryUp();
+}, {passive:false});
 
 document.getElementById("sndToggle").onclick = function() {
   muted = !muted;
