@@ -8,7 +8,8 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     background:#0b0e14; color:#e8e3d0; font-family:"Courier New", monospace;
-    display:flex; flex-direction:column; align-items:center; min-height:100vh; user-select:none;
+    display:flex; flex-direction:column; align-items:center; min-height:100vh;
+    user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
   }
   #wrap { position:relative; margin-top:8px; width:100%; max-width:966px; }
   canvas {
@@ -130,7 +131,7 @@
   <button class="cmd" id="bCafe">☕ Build Coffee Shop<br><small>$100 · restores morale</small></button>
   <div id="msg">Select units by clicking or dragging. Right-click: move / attack / convert customers / code (dev → garage).</div>
 </div>
-<div id="help">Devs: right-click your garage = write code · right-click a construction site = build. Sales: right-click a customer 🧍 = sales pitch. Pitch battles happen automatically at close range. Touch: tap = select · drag = box-select · press &amp; hold = order.</div>
+<div id="help">Devs: right-click your garage = write code · right-click a construction site = build. Sales: right-click a customer 🧍 = sales pitch. Pitch battles happen automatically at close range. Touch: tap your unit = select · drag = box-select · then tap any target = order.</div>
 
 <script>
 "use strict";
@@ -523,42 +524,54 @@ cv.addEventListener("mouseup", e=>{
   if (e.button===0) primaryUp();
 });
 
-// Touch: tap = seleccionar · arrastrar = caja de selección · mantener ~0.5s = orden (clic derecho)
-let touchTimer=null, touchStartP=null, longFired=false;
+// Touch: tap en tu unidad = seleccionar · arrastrar = caja de selección ·
+// con selección activa, tap en cualquier objetivo = orden (no hace falta mantener presionado)
+let touchStartP=null, touchHintShown=false;
+function ownUnitAt(x, y, radius=26) {
+  let best=null, bd=radius;
+  for (const u of G.units) if (u.side==="player") {
+    const d = Math.hypot(u.x-x, u.y-y);
+    if (d<bd) { bd=d; best=u; }
+  }
+  return best;
+}
 cv.addEventListener("touchstart", e=>{
   if (!G.running || G.paused) return;
   e.preventDefault();
-  const t = e.touches[0], p = canvasPos(t.clientX, t.clientY);
-  G.mouse = p; touchStartP = p; longFired = false;
-  touchTimer = setTimeout(()=>{
-    longFired = true; G.drag = null;
-    G.fx.push({x:p.x, y:p.y, e:"👉", t:.5});
-    secondaryAction(p.x, p.y);
-  }, 450);
+  const t = e.touches[0];
+  G.mouse = canvasPos(t.clientX, t.clientY);
+  touchStartP = G.mouse;
 }, {passive:false});
 cv.addEventListener("touchmove", e=>{
   if (!touchStartP) return;
   e.preventDefault();
   const t = e.touches[0], p = canvasPos(t.clientX, t.clientY);
   G.mouse = p;
-  if (longFired) return;
-  if (Math.hypot(p.x-touchStartP.x, p.y-touchStartP.y) > 12) {
-    clearTimeout(touchTimer);
-    if (!G.drag && !G.placing) G.drag = {x1:touchStartP.x, y1:touchStartP.y, x2:p.x, y2:p.y};
-  }
+  if (!G.drag && !G.placing && Math.hypot(p.x-touchStartP.x, p.y-touchStartP.y) > 14)
+    G.drag = {x1:touchStartP.x, y1:touchStartP.y, x2:p.x, y2:p.y};
   if (G.drag) { G.drag.x2 = p.x; G.drag.y2 = p.y; }
 }, {passive:false});
 cv.addEventListener("touchend", e=>{
-  clearTimeout(touchTimer);
   if (!touchStartP) return;
   e.preventDefault();
   const p = touchStartP; touchStartP = null;
-  if (longFired) { longFired=false; return; }
-  if (G.drag) { primaryUp(); return; }               // fin de caja de selección
+  if (G.drag) { primaryUp(); touchSelectHint(); return; }   // fin de caja de selección
   if (G.placing) { placeBuilding(G.mouse.x, G.mouse.y); return; }
-  G.drag = {x1:p.x, y1:p.y, x2:p.x, y2:p.y};         // tap corto = clic de selección
-  primaryUp();
+  const own = ownUnitAt(p.x, p.y);
+  if (own || !G.selection.length) {                          // tap = seleccionar
+    G.drag = {x1:p.x, y1:p.y, x2:p.x, y2:p.y};
+    primaryUp();
+    touchSelectHint();
+  } else {                                                   // tap con selección = orden
+    G.fx.push({x:p.x, y:p.y, e:"👉", t:.5});
+    secondaryAction(p.x, p.y);
+  }
 }, {passive:false});
+function touchSelectHint() {
+  if (touchHintShown || !G.selection.length) return;
+  touchHintShown = true;
+  toast("Units selected — now tap a target (customer, garage, enemy) to give the order.");
+}
 
 document.getElementById("sndToggle").onclick = function() {
   muted = !muted;
